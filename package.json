@@ -1,0 +1,24 @@
+{
+  "name": "picc-online-inventory",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:api": "cd api && npm start",
+    "dev:api": "cd api && npm run dev",
+    "start:client": "cd client && npm run dev",
+    "build:client": "cd client && npm run build",
+    "dev": "concurrently \"npm run dev:api\" \"npm run start:client\"",
+    "start": "npm run start:api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
+  }
+}
