@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://https://picc-online-inventory.onrender.com:3000',
         secure: false,
       },
     },
