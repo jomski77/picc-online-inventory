@@ -3,8 +3,8 @@ import { apiGet } from './apiConfig';
 
 export default function ApiConfigTest() {
   const [apiInfo, setApiInfo] = useState({
-    baseUrl: import.meta.env.VITE_API_BASE_URL || 'Not configured',
-    mode: import.meta.env.VITE_API_MODE || 'development',
+    baseUrl: 'https://picc-online-inventory.onrender.com',
+    mode: 'production',
     // Other env vars for debug
     env: import.meta.env.MODE,
     dev: import.meta.env.DEV,

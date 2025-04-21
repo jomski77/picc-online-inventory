@@ -5,13 +5,9 @@
  * automatically selecting the correct base URL based on the environment.
  */
 
-// Get the API base URL from environment variables
-const apiMode = import.meta.env.VITE_API_MODE || 'development';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  apiMode === 'production' 
-    ? 'https://picc-online-inventory.onrender.com'
-    : 'http://localhost:3000'
-);
+// Force all requests to the production URL
+const apiMode = 'production';
+const API_BASE_URL = 'https://picc-online-inventory.onrender.com';
 
 // Log the API configuration in development mode
 if (import.meta.env.DEV) {
@@ -28,7 +24,7 @@ if (import.meta.env.DEV) {
  * @returns {Promise<Response>} - The fetch response
  */
 export const apiGet = async (endpoint, options = {}) => {
-  const url = endpoint.startsWith('/') ? `/api${endpoint}` : `/api/${endpoint}`;
+  const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
   const defaultOptions = {
     method: 'GET',
@@ -50,7 +46,7 @@ export const apiGet = async (endpoint, options = {}) => {
  * @returns {Promise<Response>} - The fetch response
  */
 export const apiPost = async (endpoint, data, options = {}) => {
-  const url = endpoint.startsWith('/') ? `/api${endpoint}` : `/api/${endpoint}`;
+  const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
   const defaultOptions = {
     method: 'POST',
@@ -73,7 +69,7 @@ export const apiPost = async (endpoint, data, options = {}) => {
  * @returns {Promise<Response>} - The fetch response
  */
 export const apiPut = async (endpoint, data, options = {}) => {
-  const url = endpoint.startsWith('/') ? `/api${endpoint}` : `/api/${endpoint}`;
+  const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
   const defaultOptions = {
     method: 'PUT',
@@ -95,7 +91,7 @@ export const apiPut = async (endpoint, data, options = {}) => {
  * @returns {Promise<Response>} - The fetch response
  */
 export const apiDelete = async (endpoint, options = {}) => {
-  const url = endpoint.startsWith('/') ? `/api${endpoint}` : `/api/${endpoint}`;
+  const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
   const defaultOptions = {
     method: 'DELETE',

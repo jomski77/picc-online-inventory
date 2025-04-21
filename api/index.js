@@ -23,13 +23,15 @@ app.use(cookieParser());
 
 // Configure CORS based on environment
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-const clientUrlProduction = process.env.CLIENT_URL_PRODUCTION || 'https://picc-inventory-client.onrender.com';
+const clientUrlProduction = process.env.CLIENT_URL_PRODUCTION || 'https://picc-online-inventory-client.onrender.com';
 const isProduction = process.env.NODE_ENV === 'production';
 
-// In production, use the production client URL; in development, use the development client URL
-const allowedOrigins = isProduction 
-  ? [clientUrlProduction]
-  : [clientUrl, 'http://localhost:5174']; // Also allow the fallback port
+// Always allow both production and development URLs regardless of environment
+const allowedOrigins = [
+  'https://picc-online-inventory-client.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:5174' // Also allow the fallback port
+];
 
 console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log('CORS allowed origins:', allowedOrigins);
@@ -40,7 +42,7 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
-      // Check if the origin is allowed or if we're in development mode
+      // Check if the origin is in the allowed list or if we're in development mode
       if (allowedOrigins.includes(origin) || !isProduction) {
         callback(null, true);
       } else {

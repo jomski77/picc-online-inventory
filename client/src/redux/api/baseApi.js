@@ -1,20 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-// Determine if we're in production mode
-const isProduction = import.meta.env.MODE === 'production';
+// Force all requests to use the production URL
+const baseUrl = 'https://picc-online-inventory.onrender.com/api';
 
-// Get the appropriate base URL based on environment
-const baseUrl = isProduction
-  ? (import.meta.env.VITE_API_BASE_URL_PRODUCTION || 'https://picc-online-inventory.onrender.com/api')
-  : '/api'; // Use relative URL for development with proxy
+// Log configuration
+console.log('API Configuration');
+console.log('Base URL:', baseUrl);
+console.log('Mode:', import.meta.env.VITE_API_MODE);
+console.log('Env:', import.meta.env.MODE);
+console.log('Dev:', import.meta.env.DEV ? 'Yes' : 'No');
 
-// Log the environment and base URL in development
-if (import.meta.env.DEV) {
-  console.log('Environment:', import.meta.env.MODE);
-  console.log('API Base URL:', baseUrl);
-}
-
-// Create the API with proper credential handling
+// Create the API with proper error handling
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
@@ -32,12 +28,28 @@ export const baseApi = createApi({
     },
     credentials: 'include', // Include credentials in all requests
     // Handle fetch errors
-    fetchFn: async (...args) => {
+    responseHandler: async (response) => {
+      // For non-JSON responses (like HTML error pages)
+      if (!response.ok) {
+        const error = await response.text();
+        return Promise.reject(new Error(error || `Error ${response.status}: ${response.statusText}`));
+      }
+      
+      // For JSON responses
       try {
-        return await fetch(...args);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json();
+        } else {
+          const text = await response.text();
+          console.warn('Non-JSON response received:', text);
+          return text;
+        }
       } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
+        console.error('Failed to parse response:', error);
+        const text = await response.text();
+        console.error('Response text:', text);
+        return Promise.reject(new Error(`JSON parse error: ${error.message}`));
       }
     }
   }),
