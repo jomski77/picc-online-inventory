@@ -26,16 +26,31 @@ if (import.meta.env.DEV) {
 export const apiGet = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
-  const defaultOptions = {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    ...options,
-  };
-  
-  return fetch(url, defaultOptions);
+  try {
+    const defaultOptions = {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      ...options,
+    };
+    
+    // Add authorization header if token exists in localStorage
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      defaultOptions.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    if (import.meta.env.DEV) {
+      console.log(`API GET request to: ${url}`, defaultOptions);
+    }
+    
+    return await fetch(url, defaultOptions);
+  } catch (error) {
+    console.error('API GET Request Failed:', error);
+    throw error;
+  }
 };
 
 /**
@@ -48,17 +63,32 @@ export const apiGet = async (endpoint, options = {}) => {
 export const apiPost = async (endpoint, data, options = {}) => {
   const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
-  const defaultOptions = {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-    ...options,
-  };
-  
-  return fetch(url, defaultOptions);
+  try {
+    const defaultOptions = {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+      ...options,
+    };
+    
+    // Add authorization header if token exists in localStorage
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      defaultOptions.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    if (import.meta.env.DEV) {
+      console.log(`API POST request to: ${url}`, { data });
+    }
+    
+    return await fetch(url, defaultOptions);
+  } catch (error) {
+    console.error('API POST Request Failed:', error);
+    throw error;
+  }
 };
 
 /**
@@ -71,17 +101,32 @@ export const apiPost = async (endpoint, data, options = {}) => {
 export const apiPut = async (endpoint, data, options = {}) => {
   const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
-  const defaultOptions = {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-    ...options,
-  };
-  
-  return fetch(url, defaultOptions);
+  try {
+    const defaultOptions = {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+      ...options,
+    };
+    
+    // Add authorization header if token exists in localStorage
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      defaultOptions.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    if (import.meta.env.DEV) {
+      console.log(`API PUT request to: ${url}`, { data });
+    }
+    
+    return await fetch(url, defaultOptions);
+  } catch (error) {
+    console.error('API PUT Request Failed:', error);
+    throw error;
+  }
 };
 
 /**
@@ -93,16 +138,31 @@ export const apiPut = async (endpoint, data, options = {}) => {
 export const apiDelete = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
   
-  const defaultOptions = {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    ...options,
-  };
-  
-  return fetch(url, defaultOptions);
+  try {
+    const defaultOptions = {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      ...options,
+    };
+    
+    // Add authorization header if token exists in localStorage
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      defaultOptions.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    if (import.meta.env.DEV) {
+      console.log(`API DELETE request to: ${url}`);
+    }
+    
+    return await fetch(url, defaultOptions);
+  } catch (error) {
+    console.error('API DELETE Request Failed:', error);
+    throw error;
+  }
 };
 
 export default {

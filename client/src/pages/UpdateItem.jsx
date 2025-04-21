@@ -4,6 +4,7 @@ import { Alert, Button, Label, TextInput, Spinner, Modal } from 'flowbite-react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { uploadImage, deleteImage } from '../utils/supabaseStorage';
+import { apiGet, apiPut, apiDelete } from '../utils/apiConfig';
 
 export default function UpdateItem() {
   const { currentUser } = useSelector((state) => state.user);
@@ -28,12 +29,15 @@ export default function UpdateItem() {
       try {
         setLoading(true);
         
-        const res = await fetch(`/api/items/${itemId}`, {
-          credentials: 'include',
-        });
+        if (!itemId) {
+          throw new Error('Item ID is missing');
+        }
+        
+        const res = await apiGet(`items/${itemId}`);
         
         if (!res.ok) {
-          throw new Error('Failed to fetch item details');
+          const errorData = await res.json().catch(() => ({ message: 'Unknown error occurred' }));
+          throw new Error(errorData.message || `Failed to fetch item details: ${res.status}`);
         }
         
         const data = await res.json();
@@ -48,6 +52,7 @@ export default function UpdateItem() {
         setOriginalImagePath(data.picturePath);
         setLoading(false);
       } catch (error) {
+        console.error('Error fetching item:', error);
         setError(error.message);
         setLoading(false);
       }
@@ -117,29 +122,23 @@ export default function UpdateItem() {
         }
       }
       
-      const res = await fetch(`/api/items/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...formData,
-          picturePath: imageUrl,
-        }),
+      const res = await apiPut(`items/${itemId}`, {
+        ...formData,
+        picturePath: imageUrl,
       });
       
-      const data = await res.json();
-      
       if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error occurred' }));
         setLoading(false);
-        return setError(data.message);
+        return setError(errorData.message || `Failed to update item: ${res.status}`);
       }
       
+      const data = await res.json();
       setLoading(false);
       navigate('/dashboard');
       
     } catch (error) {
+      console.error('Error updating item:', error);
       setLoading(false);
       setError(error.message);
     }
@@ -159,19 +158,16 @@ export default function UpdateItem() {
         }
       }
       
-      const res = await fetch(`/api/items/${itemId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      
-      const data = await res.json();
+      const res = await apiDelete(`items/${itemId}`);
       
       if (!res.ok) {
-        return setError(data.message);
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error occurred' }));
+        return setError(errorData.message || `Failed to delete item: ${res.status}`);
       }
       
       navigate('/dashboard');
     } catch (error) {
+      console.error('Error deleting item:', error);
       setError(error.message);
     }
   };

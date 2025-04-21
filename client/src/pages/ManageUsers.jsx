@@ -4,13 +4,14 @@ import { Button, Table, TextInput, Modal, Spinner, Badge, Tooltip, Label, Select
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { FaSearch, FaLock, FaLockOpen, FaEdit, FaUpload } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { apiGet, apiPut, apiDelete } from '../utils/apiConfig';
 
 export default function ManageUsers() {
   const { currentUser } = useSelector((state) => state.user);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -29,139 +30,154 @@ export default function ManageUsers() {
   const [imageFileUrl, setImageFileUrl] = useState(null);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [toggleAdminLoading, setToggleAdminLoading] = useState(null);
+  const [toggleAdminSuccess, setToggleAdminSuccess] = useState(null);
+  const [toggleAdminError, setToggleAdminError] = useState(null);
+  const [toggleStatusLoading, setToggleStatusLoading] = useState(null);
+  const [toggleStatusSuccess, setToggleStatusSuccess] = useState(null);
+  const [toggleStatusError, setToggleStatusError] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSuccess, setEditSuccess] = useState(null);
+  const [editError, setEditError] = useState(null);
   const filePickerRef = useRef();
 
   useEffect(() => {
-    if (!currentUser?.isAdmin) {
-      return;
-    }
-    
     const fetchUsers = async () => {
+      if (!currentUser?.isAdmin) return;
+      
+      setLoading(true);
+      setError(null);
+      
       try {
-        setLoading(true);
-        
-        let url = '/api/user';
+        let endpoint = 'user';
         if (searchTerm) {
-          url += `?search=${searchTerm}`;
+          endpoint += `?search=${encodeURIComponent(searchTerm)}`;
         }
         
-        const res = await fetch(url, {
-          credentials: 'include',
-        });
+        const response = await apiGet(endpoint);
         
-        if (!res.ok) {
-          throw new Error('Failed to fetch users');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+          throw new Error(errorData.message || `API Error: ${response.status}`);
         }
         
-        const data = await res.json();
+        const data = await response.json();
         setUsers(data);
-        setLoading(false);
-      } catch (error) {
-        setError(error.message);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to fetch users. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
     
     fetchUsers();
-  }, [currentUser?.isAdmin, searchTerm]);
+  }, [currentUser, searchTerm]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     // The search is already triggered in the useEffect through searchTerm state
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (userId) => {
+    setDeleteLoading(true);
+    
     try {
-      const res = await fetch(`/api/user/${userToDelete._id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      const response = await apiDelete(`user/${userId}`);
       
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.message);
-        setShowModal(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        throw new Error(errorData.message || `Failed to delete user: ${response.status}`);
       }
       
-      setUsers((prev) => prev.filter((user) => user._id !== userToDelete._id));
-      setShowModal(false);
-    } catch (error) {
-      setError(error.message);
+      setUsers(users.filter(user => user._id !== userId));
+      setShowDeleteModal(false);
+      setDeleteSuccess('User successfully deleted');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setDeleteSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setDeleteError(err.message || 'Failed to delete user. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
-  const handleToggleAdmin = async (user) => {
+  const handleToggleAdmin = async (userId, isAdmin) => {
     try {
-      const res = await fetch(`/api/user/${user._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...user,
-          isAdmin: !user.isAdmin,
-        }),
+      setToggleAdminLoading(userId);
+      
+      const response = await apiPut(`user/${userId}/toggle-admin`, {
+        isAdmin: !isAdmin
       });
       
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.message);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        throw new Error(errorData.message || `Failed to update admin status: ${response.status}`);
       }
       
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === user._id ? { ...u, isAdmin: !u.isAdmin } : u
-        )
-      );
-    } catch (error) {
-      setError(error.message);
+      // Update users state with the updated user
+      const data = await response.json();
+      setUsers(users.map(user => user._id === userId ? data : user));
+      
+      setToggleAdminSuccess(`User ${data.username} admin status updated`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setToggleAdminSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error toggling admin status:', err);
+      setToggleAdminError(err.message || 'Failed to update admin status. Please try again.');
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setToggleAdminError(null);
+      }, 3000);
+    } finally {
+      setToggleAdminLoading(null);
     }
   };
 
-  const handleToggleStatus = async () => {
+  const handleToggleStatus = async (userId, isActive) => {
     try {
-      // Get the current user to toggle
-      const user = userToToggleStatus;
+      setToggleStatusLoading(userId);
       
-      // The user may not have an isActive property yet, so we'll set it to the opposite of its current value
-      // If it doesn't exist, assume the user is currently active (true) and set to inactive (false)
-      const isActive = user.isActive === undefined ? true : user.isActive;
-      
-      const res = await fetch(`/api/user/${user._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...user,
-          isActive: !isActive,
-        }),
+      const response = await apiPut(`user/${userId}/toggle-status`, {
+        isActive: !isActive
       });
       
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.message);
-        setShowStatusModal(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        throw new Error(errorData.message || `Failed to update user status: ${response.status}`);
       }
       
-      // Update the user in the list with the new status
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === user._id ? { ...u, isActive: !isActive } : u
-        )
-      );
+      // Update users state with the updated user
+      const data = await response.json();
+      setUsers(users.map(user => user._id === userId ? data : user));
       
-      setShowStatusModal(false);
-    } catch (error) {
-      setError(error.message);
+      setToggleStatusSuccess(`User ${data.username} ${data.isActive ? 'activated' : 'deactivated'}`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setToggleStatusSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error toggling user status:', err);
+      setToggleStatusError(err.message || 'Failed to update user status. Please try again.');
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setToggleStatusError(null);
+      }, 3000);
+    } finally {
+      setToggleStatusLoading(null);
     }
   };
 
@@ -199,285 +215,289 @@ export default function ManageUsers() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     
-    if (updateLoading) return;
+    if (!userToEdit) return;
+    
+    setUpdateLoading(true);
     
     try {
-      setUpdateLoading(true);
-      setError(null);
-      setUpdateSuccess(null);
-      
-      // Handle image upload if an image was selected
-      let profilePictureUrl = formData.profilePicture;
-      
-      if (imageFile) {
-        // In a real app, you would upload to a storage service like S3 or Firebase Storage
-        // For this demo, we'll simulate an upload by creating a data URL
-        // This is not how you'd do it in production
-        const reader = new FileReader();
-        const uploadPromise = new Promise((resolve) => {
-          reader.onload = (e) => {
-            resolve(e.target.result);
-          };
-          reader.readAsDataURL(imageFile);
-        });
-        
-        profilePictureUrl = await uploadPromise;
-      }
-      
-      // Prepare the user data object
-      const userData = {
-        ...userToEdit,
+      const response = await apiPut(`user/${userToEdit._id}`, {
         username: formData.username,
         email: formData.email,
         department: formData.department,
         jobTitle: formData.jobTitle,
-        profilePicture: profilePictureUrl,
-      };
-      
-      // Only include password in the update if it was provided
-      if (formData.password) {
-        userData.password = formData.password;
-      }
-      
-      const res = await fetch(`/api/user/${userToEdit._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(userData),
+        password: formData.password || undefined
       });
       
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.message);
-        setUpdateLoading(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        throw new Error(errorData.message || `Failed to update user: ${response.status}`);
       }
       
-      // Update the user in the list with the new details
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === userToEdit._id ? { 
-            ...u, 
-            username: formData.username,
-            email: formData.email,
-            department: formData.department,
-            jobTitle: formData.jobTitle,
-            profilePicture: profilePictureUrl,
-          } : u
-        )
-      );
+      const data = await response.json();
       
+      // Update the user in the state
+      setUsers(users.map(user => user._id === userToEdit._id ? data : user));
+      
+      // Close the modal and reset form
+      setUserToEdit(null);
       setUpdateSuccess('User updated successfully');
-      setUpdateLoading(false);
+      setShowEditModal(false);
       
-      // Reset password field
-      setFormData({
-        ...formData,
-        password: '',
-      });
-      
-      setImageFile(null);
-    } catch (error) {
-      setError(error.message);
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUpdateSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setError(err.message || 'Failed to update user. Please try again.');
+    } finally {
       setUpdateLoading(false);
     }
   };
 
+  if (!currentUser?.isAdmin) {
+    return (
+      <div className="p-4">
+        <Alert color="failure">
+          <span>You do not have permission to access this page. Please contact an administrator.</span>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
-    <div className='p-3 max-w-6xl mx-auto min-h-screen'>
-      <h1 className='text-3xl font-bold my-6 text-center dark:text-white'>
-        Manage Users
-      </h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Manage Users</h1>
       
-      <form onSubmit={handleSearch} className='flex gap-2 mb-6'>
-        <TextInput
-          type='text'
-          placeholder='Search user by username or email'
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className='flex-1'
-        />
-        <Button type='submit' gradientDuoTone='purpleToPink'>
-          <FaSearch className='mr-2' />
-          Search
-        </Button>
+      {error && (
+        <Alert color="failure" className="mb-4">
+          <span>{error}</span>
+        </Alert>
+      )}
+      
+      {deleteSuccess && (
+        <Alert color="success" className="mb-4">
+          <span>{deleteSuccess}</span>
+        </Alert>
+      )}
+      
+      {toggleAdminSuccess && (
+        <Alert color="success" className="mb-4">
+          <span>{toggleAdminSuccess}</span>
+        </Alert>
+      )}
+      
+      {toggleStatusSuccess && (
+        <Alert color="success" className="mb-4">
+          <span>{toggleStatusSuccess}</span>
+        </Alert>
+      )}
+      
+      <form onSubmit={handleSearch} className="mb-4">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <FaSearch className="w-4 h-4 text-gray-500" />
+          </div>
+          <TextInput
+            type="search"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
       </form>
       
       {loading ? (
-        <div className='flex justify-center items-center min-h-[400px]'>
-          <Spinner size='xl' />
-        </div>
-      ) : error ? (
-        <div className='text-center text-red-500'>
-          <p>{error}</p>
-        </div>
-      ) : users.length === 0 ? (
-        <div className='text-center dark:text-white min-h-[400px] flex items-center justify-center'>
-          <p>No users found</p>
+        <div className="flex justify-center items-center my-8">
+          <Spinner aria-label="Loading users..." size="xl" />
         </div>
       ) : (
-        <Table hoverable>
-          <Table.Head>
-            <Table.HeadCell>Image</Table.HeadCell>
-            <Table.HeadCell>Username</Table.HeadCell>
-            <Table.HeadCell>Email</Table.HeadCell>
-            <Table.HeadCell>Job Title</Table.HeadCell>
-            <Table.HeadCell>Status</Table.HeadCell>
-            <Table.HeadCell>Actions</Table.HeadCell>
-          </Table.Head>
-          <Table.Body className='divide-y'>
-            {users.map((user) => (
-              <Table.Row 
-                key={user._id} 
-                className={`${user.isActive === false ? 'bg-gray-100 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'}`}
-              >
-                <Table.Cell>
-                  <img
-                    src={user.profilePicture}
-                    alt={user.username}
-                    className={`w-10 h-10 rounded-md object-cover ${user.isActive === false ? 'opacity-60 grayscale' : ''}`}
-                  />
-                </Table.Cell>
-                <Table.Cell className={`font-medium text-gray-900 dark:text-white ${user.isActive === false ? 'line-through opacity-70' : ''}`}>
-                  {user.username}
-                  {user.department && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Department: {user.department}
-                    </div>
-                  )}
-                </Table.Cell>
-                <Table.Cell className={user.isActive === false ? 'opacity-70' : ''}>
-                  {user.email}
-                  {user.jobTitle && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Job Title: {user.jobTitle}
-                    </div>
-                  )}
-                </Table.Cell>
-                <Table.Cell>
-                  {user.isAdmin ? (
-                    <Badge color='success'>Admin</Badge>
-                  ) : (
-                    <Badge color='info'>User</Badge>
-                  )}
-                </Table.Cell>
-                <Table.Cell>
-                  {user.isActive === false ? (
-                    <Badge color='failure' className='flex items-center gap-1'>
-                      <FaLock className="h-3 w-3" />
-                      Inactive
-                    </Badge>
-                  ) : (
-                    <Badge color='success' className='flex items-center gap-1'>
-                      <FaLockOpen className="h-3 w-3" />
-                      Active
-                    </Badge>
-                  )}
-                </Table.Cell>
-                <Table.Cell>
-                  <div className='flex gap-2 flex-wrap'>
-                    <Button
-                      size='xs'
-                      color='info'
-                      as={Link}
-                      to={`/edit-user/${user._id}`}
-                      disabled={user._id === currentUser._id}
-                    >
-                      <FaEdit className="mr-1" /> Edit
-                    </Button>
-                    <Button
-                      size='xs'
-                      color={user.isAdmin ? 'warning' : 'success'}
-                      onClick={() => handleToggleAdmin(user)}
-                      disabled={user._id === currentUser._id}
-                    >
-                      {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                    </Button>
-                    <Button
-                      size='xs'
-                      color={user.isActive === false ? 'success' : 'warning'}
-                      onClick={() => {
-                        setUserToToggleStatus(user);
-                        setShowStatusModal(true);
-                      }}
-                      disabled={user._id === currentUser._id}
-                    >
-                      {user.isActive === false ? 'Activate' : 'Deactivate'}
-                    </Button>
-                    <Button
-                      size='xs'
-                      color='failure'
-                      onClick={() => {
-                        setUserToDelete(user);
-                        setShowModal(true);
-                      }}
-                      disabled={user._id === currentUser._id}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table striped>
+            <Table.Head>
+              <Table.HeadCell>Avatar</Table.HeadCell>
+              <Table.HeadCell>Username</Table.HeadCell>
+              <Table.HeadCell>Email</Table.HeadCell>
+              <Table.HeadCell>Department</Table.HeadCell>
+              <Table.HeadCell>Job Title</Table.HeadCell>
+              <Table.HeadCell>Role</Table.HeadCell>
+              <Table.HeadCell>Status</Table.HeadCell>
+              <Table.HeadCell>Actions</Table.HeadCell>
+            </Table.Head>
+            <Table.Body>
+              {users.length > 0 ? (
+                users.map((user) => (
+                  <Table.Row key={user._id} className="bg-white dark:border-gray-700 dark:bg-gray-800">
+                    <Table.Cell>
+                      <img
+                        src={user.profilePicture || 'https://flowbite.com/docs/images/people/profile-picture-5.jpg'}
+                        alt={`${user.username}'s profile`}
+                        className="w-10 h-10 rounded-full"
+                      />
+                    </Table.Cell>
+                    <Table.Cell>{user.username}</Table.Cell>
+                    <Table.Cell>{user.email}</Table.Cell>
+                    <Table.Cell>{user.department || 'N/A'}</Table.Cell>
+                    <Table.Cell>{user.jobTitle || user.role || 'N/A'}</Table.Cell>
+                    <Table.Cell>
+                      {user._id !== currentUser._id && (
+                        <Button
+                          size="xs"
+                          color={user.isAdmin ? 'failure' : 'success'}
+                          onClick={() => handleToggleAdmin(user._id, user.isAdmin)}
+                        >
+                          {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                        </Button>
+                      )}
+                      {user._id === currentUser._id && (
+                        <Badge color="purple">You</Badge>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {user.isActive !== false ? (
+                        <Badge color="success">Active</Badge>
+                      ) : (
+                        <Badge color="failure">Inactive</Badge>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell className="flex flex-row space-x-2">
+                      <Tooltip content="Edit User">
+                        <Button
+                          size="xs"
+                          color="info"
+                          onClick={() => handleEditClick(user)}
+                        >
+                          <FaEdit className="mr-1" /> Edit
+                        </Button>
+                      </Tooltip>
+                      {user._id !== currentUser._id && (
+                        <>
+                          <Tooltip content={user.isActive !== false ? "Deactivate User" : "Activate User"}>
+                            <Button
+                              size="xs"
+                              color={user.isActive !== false ? "warning" : "success"}
+                              onClick={() => {
+                                setUserToToggleStatus(user);
+                                setShowStatusModal(true);
+                              }}
+                            >
+                              {user.isActive !== false ? (
+                                <>
+                                  <FaLock className="mr-1" /> Lock
+                                </>
+                              ) : (
+                                <>
+                                  <FaLockOpen className="mr-1" /> Unlock
+                                </>
+                              )}
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Delete User">
+                            <Button
+                              size="xs"
+                              color="failure"
+                              onClick={() => {
+                                setUserToDelete(user);
+                                setShowDeleteModal(true);
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </Tooltip>
+                        </>
+                      )}
+                    </Table.Cell>
+                  </Table.Row>
+                ))
+              ) : (
+                <Table.Row>
+                  <Table.Cell colSpan={8} className="text-center">
+                    No users found.
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table>
+        </div>
       )}
       
-      {/* Delete User Modal */}
-      <Modal show={showModal} onClose={() => setShowModal(false)} popup size='md'>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        popup
+        size="md"
+      >
         <Modal.Header />
         <Modal.Body>
-          <div className='text-center'>
-            <HiOutlineExclamationCircle className='h-14 w-14 text-gray-400 dark:text-gray-200 mb-4 mx-auto' />
-            <h3 className='mb-5 text-lg text-gray-500 dark:text-gray-400'>
-              Are you sure you want to delete user{' '}
-              <span className='font-bold'>{userToDelete?.username}</span>?
+          <div className="text-center">
+            <HiOutlineExclamationCircle className="mx-auto mb-4 h-14 w-14 text-gray-400 dark:text-gray-200" />
+            <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+              Are you sure you want to delete this user?
+              <div className="mt-2 font-bold text-gray-900 dark:text-white">
+                {userToDelete?.username}
+              </div>
             </h3>
-            <div className='flex justify-center gap-4'>
-              <Button color='failure' onClick={handleDelete}>
-                Yes, I'm sure
+            <div className="flex justify-center gap-4">
+              <Button 
+                color="failure" 
+                onClick={() => handleDelete(userToDelete._id)}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
               </Button>
-              <Button color='gray' onClick={() => setShowModal(false)}>
-                No, cancel
+              <Button color="gray" onClick={() => setShowDeleteModal(false)}>
+                Cancel
               </Button>
             </div>
           </div>
         </Modal.Body>
       </Modal>
       
-      {/* Toggle Status Modal */}
-      <Modal show={showStatusModal} onClose={() => setShowStatusModal(false)} popup size='md'>
+      {/* Status Toggle Modal */}
+      <Modal
+        show={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        popup
+        size="md"
+      >
         <Modal.Header />
         <Modal.Body>
-          <div className='text-center'>
-            <HiOutlineExclamationCircle className='h-14 w-14 text-gray-400 dark:text-gray-200 mb-4 mx-auto' />
-            <h3 className='mb-5 text-lg text-gray-500 dark:text-gray-400'>
-              {userToToggleStatus?.isActive === false ? (
-                <>
-                  Are you sure you want to <span className='font-bold text-green-500'>activate</span> user{' '}
-                  <span className='font-bold'>{userToToggleStatus?.username}</span>?
-                  <p className='mt-2 text-sm'>This will allow them to log in and use the application.</p>
-                </>
-              ) : (
-                <>
-                  Are you sure you want to <span className='font-bold text-red-500'>deactivate</span> user{' '}
-                  <span className='font-bold'>{userToToggleStatus?.username}</span>?
-                  <p className='mt-2 text-sm'>This will prevent them from logging in and using the application.</p>
-                </>
-              )}
+          <div className="text-center">
+            <HiOutlineExclamationCircle className="mx-auto mb-4 h-14 w-14 text-gray-400 dark:text-gray-200" />
+            <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+              {userToToggleStatus?.isActive !== false
+                ? "Are you sure you want to deactivate this user?"
+                : "Are you sure you want to activate this user?"}
+              <div className="mt-2 font-bold text-gray-900 dark:text-white">
+                {userToToggleStatus?.username}
+              </div>
             </h3>
-            <div className='flex justify-center gap-4'>
-              <Button 
-                color={userToToggleStatus?.isActive === false ? 'success' : 'failure'} 
-                onClick={handleToggleStatus}
+            <div className="flex justify-center gap-4">
+              <Button
+                color={userToToggleStatus?.isActive !== false ? "warning" : "success"}
+                onClick={() => handleToggleStatus(userToToggleStatus._id, userToToggleStatus.isActive)}
+                disabled={toggleStatusLoading === userToToggleStatus?._id}
               >
-                Yes, I'm sure
+                {toggleStatusLoading === userToToggleStatus?._id ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  userToToggleStatus?.isActive !== false ? "Deactivate" : "Activate"
+                )}
               </Button>
-              <Button color='gray' onClick={() => setShowStatusModal(false)}>
-                No, cancel
+              <Button color="gray" onClick={() => setShowStatusModal(false)}>
+                Cancel
               </Button>
             </div>
           </div>
@@ -485,140 +505,124 @@ export default function ManageUsers() {
       </Modal>
       
       {/* Edit User Modal */}
-      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} size='xl'>
+      <Modal
+        show={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        popup
+        size="xl"
+      >
         <Modal.Header>
-          <h3 className="text-xl font-medium text-gray-900 dark:text-white">
-            Edit User: {userToEdit?.username}
-          </h3>
+          <div className="text-xl font-medium text-gray-900 dark:text-white">
+            Edit User - {userToEdit?.username}
+          </div>
         </Modal.Header>
         <Modal.Body>
+          {updateSuccess && (
+            <Alert color="success" className="mb-4">
+              <span>{updateSuccess}</span>
+            </Alert>
+          )}
+          {error && (
+            <Alert color="failure" className="mb-4">
+              <span>{error}</span>
+            </Alert>
+          )}
           <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Profile Picture Section */}
-              <div className="mb-4 md:w-1/3 flex flex-col items-center">
-                <div className="relative w-32 h-32 mb-3">
-                  <img
-                    src={imageFileUrl || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'}
-                    alt="Profile"
-                    className="rounded-full w-32 h-32 object-cover border-2 border-gray-200"
-                  />
-                  <Button
-                    size="xs"
-                    color="gray"
-                    className="absolute bottom-0 right-0"
-                    onClick={() => filePickerRef.current.click()}
-                  >
-                    <FaUpload className="mr-1" /> 
-                    Change
-                  </Button>
-                  <input
-                    type="file"
-                    ref={filePickerRef}
-                    hidden
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </div>
-                <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                  Click to upload a new profile picture
-                </div>
+            <div className="mb-4 flex flex-col items-center justify-center">
+              <img
+                src={imageFileUrl || "https://flowbite.com/docs/images/people/profile-picture-5.jpg"}
+                alt="Profile"
+                className="w-24 h-24 rounded-full object-cover mb-2"
+              />
+              <Button
+                size="sm"
+                onClick={() => filePickerRef.current.click()}
+                className="mt-2"
+              >
+                <FaUpload className="mr-2" /> Change Avatar
+              </Button>
+              <input
+                type="file"
+                ref={filePickerRef}
+                onChange={handleImageChange}
+                hidden
+                accept="image/*"
+              />
+            </div>
+            <div>
+              <div className="mb-2 block">
+                <Label htmlFor="username" value="Username" />
               </div>
-              
-              {/* User Details Section */}
-              <div className="space-y-4 md:w-2/3">
-                {updateSuccess && (
-                  <Alert color="success" className="mb-3">
-                    {updateSuccess}
-                  </Alert>
-                )}
-                
-                {error && (
-                  <Alert color="failure" className="mb-3">
-                    {error}
-                  </Alert>
-                )}
-              
-                <div>
-                  <div className="mb-2">
-                    <Label htmlFor="username" value="Username" />
-                  </div>
-                  <TextInput
-                    id="username"
-                    value={formData.username}
-                    onChange={handleEditInputChange}
-                    required
-                  />
+              <TextInput
+                id="username"
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleEditInputChange}
+                required
+              />
+            </div>
+            <div>
+              <div className="mb-2 block">
+                <Label htmlFor="email" value="Email" />
+              </div>
+              <TextInput
+                id="email"
+                placeholder="name@company.com"
+                value={formData.email}
+                onChange={handleEditInputChange}
+                required
+                type="email"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="mb-2 block">
+                  <Label htmlFor="department" value="Department" />
                 </div>
-                
-                <div>
-                  <div className="mb-2">
-                    <Label htmlFor="email" value="Email" />
-                  </div>
-                  <TextInput
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleEditInputChange}
-                    required
-                  />
+                <TextInput
+                  id="department"
+                  placeholder="Department"
+                  value={formData.department}
+                  onChange={handleEditInputChange}
+                />
+              </div>
+              <div>
+                <div className="mb-2 block">
+                  <Label htmlFor="jobTitle" value="Job Title" />
                 </div>
-                
-                <div>
-                  <div className="mb-2">
-                    <Label htmlFor="password" value="Password (leave blank to keep unchanged)" />
-                  </div>
-                  <TextInput
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleEditInputChange}
-                    placeholder="New password"
-                  />
-                </div>
-                
-                <div>
-                  <div className="mb-2">
-                    <Label htmlFor="department" value="Department" />
-                  </div>
-                  <TextInput
-                    id="department"
-                    value={formData.department}
-                    onChange={handleEditInputChange}
-                    placeholder="e.g. Nursing, IT, Administration"
-                  />
-                </div>
-                
-                <div>
-                  <div className="mb-2">
-                    <Label htmlFor="jobTitle" value="Job Title" />
-                  </div>
-                  <TextInput
-                    id="jobTitle"
-                    value={formData.jobTitle}
-                    onChange={handleEditInputChange}
-                    placeholder="e.g. Nurse, Physician, Manager"
-                  />
-                </div>
+                <TextInput
+                  id="jobTitle"
+                  placeholder="Job Title"
+                  value={formData.jobTitle}
+                  onChange={handleEditInputChange}
+                />
               </div>
             </div>
-            
-            <div className="flex justify-end gap-4 mt-6">
-              <Button color="gray" onClick={() => setShowEditModal(false)}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                gradientDuoTone="purpleToPink"
-                disabled={updateLoading}
-              >
+            <div>
+              <div className="mb-2 block">
+                <Label htmlFor="password" value="New Password (leave blank to keep current)" />
+              </div>
+              <TextInput
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleEditInputChange}
+              />
+            </div>
+            <div className="flex justify-center gap-4">
+              <Button color="info" type="submit" disabled={updateLoading}>
                 {updateLoading ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Saving...
+                    Updating...
                   </>
                 ) : (
-                  'Save Changes'
+                  "Update User"
                 )}
+              </Button>
+              <Button color="gray" onClick={() => setShowEditModal(false)}>
+                Cancel
               </Button>
             </div>
           </form>
