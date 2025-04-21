@@ -1,9 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Alert, Button, Label, TextInput, Spinner } from 'flowbite-react';
+import { Alert, Button, Label, TextInput, Spinner, Select } from 'flowbite-react';
 import { useNavigate } from 'react-router-dom';
-import { uploadImage } from '../utils/supabaseStorage';
+import { uploadImageToSupabase } from '../utils/supabaseStorage';
 import { apiPost } from '../utils/apiConfig';
+
+// Default image to use when no image is provided
+const DEFAULT_IMAGE = 'https://eurzpxkjndcnhmdsggvs.supabase.co/storage/v1/object/public/picc-inventory-images/default-supply-image.png';
 
 export default function CreateItem() {
   const { currentUser } = useSelector((state) => state.user);
@@ -31,7 +34,7 @@ export default function CreateItem() {
   const uploadImageToSupabase = async (file) => {
     try {
       console.log('Uploading image file:', file.name, file.type, file.size);
-      const result = await uploadImage(file);
+      const result = await uploadImageToSupabase(file);
       console.log('Upload result:', result);
       setImageFileUploading(false);
       return result;
@@ -51,55 +54,27 @@ export default function CreateItem() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name) {
-      return setError('Please enter an item name');
+    if (!formData.name || !formData.category) {
+      return setError('Name and category are required');
     }
     
     try {
       setLoading(true);
       setError(null);
       
-      // Upload image if one was selected
-      let imageUrl = '';
+      // Upload image if selected
+      let imageUrl = DEFAULT_IMAGE;
       
       if (imageFile) {
-        console.log('Preparing to upload image');
         const uploadResult = await uploadImageToSupabase(imageFile);
         if (!uploadResult.success) {
           setLoading(false);
           return setError(uploadResult.message);
         }
-        
-        // Validate the image URL
-        if (!uploadResult.url || typeof uploadResult.url !== 'string') {
-          console.error('Invalid image URL returned:', uploadResult.url);
-          setLoading(false);
-          return setError('Invalid image URL returned from storage');
-        }
-        
-        // Additional validation to ensure URL is properly formatted
-        if (!uploadResult.url.startsWith('http://') && !uploadResult.url.startsWith('https://')) {
-          console.error('URL does not start with http:// or https://', uploadResult.url);
-          setLoading(false);
-          return setError('Invalid image URL format returned from storage');
-        }
-        
-        // Ensure URL doesn't match current location
-        if (uploadResult.url === window.location.href) {
-          console.error('URL matches current location - invalid:', uploadResult.url);
-          setLoading(false);
-          return setError('Invalid image URL returned from storage');
-        }
-        
         imageUrl = uploadResult.url;
-        console.log('Image successfully uploaded, URL:', imageUrl);
       }
       
-      console.log('Submitting item with data:', {
-        ...formData,
-        picturePath: imageUrl,
-      });
-      
+      // Use apiPost instead of direct fetch
       const res = await apiPost('items', {
         ...formData,
         picturePath: imageUrl,

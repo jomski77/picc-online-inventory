@@ -13,6 +13,7 @@ import {
   deleteUserFailure,
   signoutSuccess,
 } from '../redux/user/userSlice';
+import { apiPut } from '../utils/apiConfig';
 
 export default function Profile() {
   const { currentUser, loading, error } = useSelector((state) => state.user);
@@ -74,7 +75,7 @@ export default function Profile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (Object.keys(formData).length === 0) {
+    if (formData.username === '' || formData.email === '') {
       return;
     }
     
@@ -108,16 +109,10 @@ export default function Profile() {
         console.log('Profile image successfully uploaded, URL:', imageUrl);
       }
       
-      const res = await fetch(`/api/user/${currentUser._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...formData,
-          profilePicture: imageUrl,
-        }),
+      // Use apiPut instead of direct fetch
+      const res = await apiPut(`user/${currentUser._id}`, {
+        ...formData,
+        profilePicture: imageUrl,
       });
       
       const data = await res.json();

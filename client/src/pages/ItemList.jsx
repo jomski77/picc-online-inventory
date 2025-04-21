@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { HiInformationCircle } from 'react-icons/hi';
 import { TextInput } from 'flowbite-react';
 import { FaSearch } from 'react-icons/fa';
+import { apiGet } from '../utils/apiConfig';
 
 // Default image to use when no image is provided
 const DEFAULT_IMAGE = 'https://eurzpxkjndcnhmdsggvs.supabase.co/storage/v1/object/public/picc-inventory-images/default-supply-image.png';
@@ -67,13 +68,13 @@ export default function ItemList() {
         const searchTerm = urlParams.get('searchTerm');
         
         // Build URL with search parameter if it exists
-        let url = '/api/items';
+        let endpoint = 'items';
         if (searchTerm) {
-          url += `?search=${searchTerm}`;
+          endpoint += `?search=${searchTerm}`;
         }
         
-        console.log('Fetching from URL:', url);
-        const res = await fetch(url);
+        console.log('Fetching items from endpoint:', endpoint);
+        const res = await apiGet(endpoint);
         console.log('Response status:', res.status);
         
         // Check if response is OK before trying to parse JSON
