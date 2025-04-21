@@ -13,6 +13,7 @@
     "@reduxjs/toolkit": "^2.0.1",
     "@supabase/supabase-js": "^2.49.4",
     "chart.js": "^4.4.1",
+    "date-fns": "^4.1.0",
     "flowbite": "^2.2.1",
     "flowbite-react": "^0.7.2",
     "highcharts-react-official": "^3.2.1",
