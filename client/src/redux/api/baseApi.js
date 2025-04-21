@@ -5,7 +5,7 @@ const isProduction = import.meta.env.MODE === 'production';
 
 // Get the appropriate base URL based on environment
 const baseUrl = isProduction
-  ? import.meta.env.VITE_API_BASE_URL_PRODUCTION || 'https://picc-online-inventory.onrender.com:10000/api'
+  ? (import.meta.env.VITE_API_BASE_URL_PRODUCTION || 'https://picc-inventory-api.onrender.com/api')
   : '/api'; // Use relative URL for development with proxy
 
 // Log the environment and base URL in development

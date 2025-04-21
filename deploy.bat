@@ -11,10 +11,14 @@ echo Client build complete!
 REM Back to project root
 cd ..
 
-REM Build the API
+REM Build the API with production environment
 echo Building API...
 cd api
 call npm install
+
+REM Copy production environment file
+echo Preparing API for production...
+copy .env.production .env
 echo API build complete!
 
 echo Deployment files are ready!
