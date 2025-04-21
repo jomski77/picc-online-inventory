@@ -9,7 +9,7 @@
 const apiMode = import.meta.env.VITE_API_MODE || 'development';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
   apiMode === 'production' 
-    ? 'https://picc-online-inventory.onrender.com:10000'
+    ? 'https://picc-online-inventory.onrender.com'
     : 'http://localhost:3000'
 );
 
