@@ -1,0 +1,26 @@
+services:
+  # The client web application
+  - type: web
+    name: picc-inventory-client
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL_PRODUCTION
+        value: https://picc-inventory-api.onrender.com
+      - key: VITE_API_MODE
+        value: production
+
+  # The API server
+  - type: web
+    name: picc-inventory-api
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        value: mongodb+srv://chippytunamayo:S8rfh4knUshiC5kJ@cluster0.ks87ytd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - key: JWT_SECRET
+        value: 593b95fbdef2c3c6a47adf884da87ad87abbe0d72dcc7aa08dbeae0bf7e7b6ad 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Button, Table, Badge, Spinner, Select } from 'flowbite-react';
 import { Link } from 'react-router-dom';
+import { apiGet } from '../utils/apiConfig';
 
 export default function StockHistory() {
   const { currentUser } = useSelector((state) => state.user);
@@ -14,7 +15,7 @@ export default function StockHistory() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch('/api/items');
+        const res = await apiGet('items');
         const data = await res.json();
         setItems(data);
       } catch (error) {
@@ -30,21 +31,17 @@ export default function StockHistory() {
         setLoading(true);
         setError(null);
         
-        let url = '/api/stock';
+        let endpoint = 'stock';
+        const params = new URLSearchParams();
+        
         if (selectedItem) {
-          url += `?item=${selectedItem}`;
-        } else {
-          url += '?populate=createdBy';
+          params.append('item', selectedItem);
         }
         
-        // Add populate parameter if we already have a query parameter
-        if (selectedItem) {
-          url += '&populate=createdBy';
-        }
+        params.append('populate', 'createdBy');
         
-        const res = await fetch(url, {
-          credentials: 'include',
-        });
+        const url = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
+        const res = await apiGet(url);
         
         if (!res.ok) {
           throw new Error('Failed to fetch stock history');

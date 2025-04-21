@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { Alert, Button, Label, TextInput, Spinner } from 'flowbite-react';
 import { useNavigate } from 'react-router-dom';
 import { uploadImage } from '../utils/supabaseStorage';
+import { apiPost } from '../utils/apiConfig';
 
 export default function CreateItem() {
   const { currentUser } = useSelector((state) => state.user);
@@ -28,7 +29,6 @@ export default function CreateItem() {
   };
 
   const uploadImageToSupabase = async (file) => {
-    setImageFileUploading(true);
     try {
       console.log('Uploading image file:', file.name, file.type, file.size);
       const result = await uploadImage(file);
@@ -36,12 +36,10 @@ export default function CreateItem() {
       setImageFileUploading(false);
       return result;
     } catch (error) {
-      console.error('Error in uploadImageToSupabase:', error);
+      console.error('Error uploading image:', error);
       setImageFileUploading(false);
-      return { 
-        success: false, 
-        message: error.message || 'Error uploading image' 
-      };
+      setError('Error uploading image: ' + error.message);
+      return { success: false, message: error.message };
     }
   };
 
@@ -102,16 +100,9 @@ export default function CreateItem() {
         picturePath: imageUrl,
       });
       
-      const res = await fetch('/api/items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...formData,
-          picturePath: imageUrl,
-        }),
+      const res = await apiPost('items', {
+        ...formData,
+        picturePath: imageUrl,
       });
       
       const data = await res.json();

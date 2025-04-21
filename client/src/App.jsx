@@ -24,6 +24,7 @@ import EditUsage from './pages/EditUsage';
 import EditUser from './pages/EditUser';
 import ActivityChart from './pages/ActivityChart';
 import { initializeStorage } from './utils/supabaseStorage';
+import ApiConfigTest from './utils/ApiConfigTest';
 
 export default function App() {
   useEffect(() => {
@@ -71,6 +72,8 @@ export default function App() {
           </Routes>
         </main>
         <Footer />
+        {/* API Configuration Test component (only shown in development) */}
+        {import.meta.env.DEV && <ApiConfigTest />}
       </div>
     </BrowserRouter>
   );

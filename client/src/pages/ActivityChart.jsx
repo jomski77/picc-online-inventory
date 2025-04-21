@@ -4,6 +4,7 @@ import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { format, subDays } from 'date-fns';
 import { useSelector } from 'react-redux';
+import { apiGet } from '../utils/apiConfig';
 
 export default function ActivityChart() {
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
@@ -62,12 +63,11 @@ export default function ActivityChart() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const response = await fetch('/api/items');
+        const response = await apiGet('items');
         const data = await response.json();
         
-        // Handle the data format where items may be wrapped in an 'items' property
-        const itemsArray = Array.isArray(data) ? data : 
-                         Array.isArray(data.items) ? data.items : [];
+        // Always treat the response as an array
+        const itemsArray = Array.isArray(data) ? data : [];
         
         setItems(itemsArray);
         
@@ -117,15 +117,11 @@ export default function ActivityChart() {
       
       try {
         // Fetch stock additions
-        const stockResponse = await fetch(`/api/stock?startDate=${startDate}&endDate=${endDate}`, {
-          credentials: 'include'
-        });
+        const stockResponse = await apiGet(`stock?startDate=${startDate}&endDate=${endDate}`);
         const stockData = await stockResponse.json();
         
         // Fetch stock usage
-        const usageResponse = await fetch(`/api/stockUsage?startDate=${startDate}&endDate=${endDate}`, {
-          credentials: 'include'
-        });
+        const usageResponse = await apiGet(`stockUsage?startDate=${startDate}&endDate=${endDate}`);
         const usageData = await usageResponse.json();
         
         // Process the data for the chart

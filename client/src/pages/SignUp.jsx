@@ -2,6 +2,7 @@ import { Alert, Button, Label, Spinner, TextInput, FileInput } from 'flowbite-re
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { uploadImage } from '../utils/supabaseStorage';
+import { apiPost } from '../utils/apiConfig';
 
 export default function SignUp() {
   const [formData, setFormData] = useState({});
@@ -62,13 +63,9 @@ export default function SignUp() {
       }
       
       // Submit user data with the image URL
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          profilePicture: uploadResult.url
-        }),
+      const res = await apiPost('auth/signup', {
+        ...formData,
+        profilePicture: uploadResult.url
       });
       
       const data = await res.json();

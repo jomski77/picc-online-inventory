@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Alert, Button, Label, TextInput, Spinner, Select } from 'flowbite-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { apiGet, apiPut } from '../utils/apiConfig';
 
 export default function EditStock() {
   const { currentUser } = useSelector((state) => state.user);
@@ -20,7 +21,7 @@ export default function EditStock() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch('/api/items');
+        const res = await apiGet('items');
         const data = await res.json();
         setItems(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -32,9 +33,7 @@ export default function EditStock() {
       try {
         setLoading(true);
         
-        const res = await fetch(`/api/stock/${stockId}`, {
-          credentials: 'include',
-        });
+        const res = await apiGet(`stock/${stockId}`);
         
         if (!res.ok) {
           throw new Error('Failed to fetch stock record');
@@ -78,16 +77,9 @@ export default function EditStock() {
       setSubmitting(true);
       setError(null);
       
-      const res = await fetch(`/api/stock/${stockId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          quantity: formData.quantity,
-          item: formData.item,
-        }),
+      const res = await apiPut(`stock/${stockId}`, {
+        quantity: formData.quantity,
+        item: formData.item,
       });
       
       const data = await res.json();

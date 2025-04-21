@@ -1,136 +1,109 @@
 # PICC Online Inventory Management System
 
-A comprehensive inventory management system designed specifically for PICC (Peripherally Inserted Central Catheter) insertion teams in healthcare settings.
+A comprehensive inventory management system for PICC Insertion Teams, allowing for tracking stock levels, usage, and providing insights through charts and reports.
 
-## Project Overview
+## Features
 
-This application helps medical teams track and manage their inventory of supplies used for PICC line insertions. It provides features for:
+- User authentication and role-based access control
+- Inventory management (add, update, delete items)
+- Stock tracking (add stock, record usage)
+- Dashboard with charts and metrics
+- User management for admins
+- Profile management for users
 
-- Real-time inventory tracking
-- Stock usage and addition history
-- Low stock alerts
-- User management with different permission levels
-- Activity visualization through charts and reports
+## Tech Stack
 
-## Project Structure
+- **Frontend**: React, Redux Toolkit, Chart.js, Tailwind CSS, Flowbite
+- **Backend**: Node.js, Express
+- **Database**: MongoDB
+- **Storage**: Supabase for image storage
+- **Deployment**: Render
 
-The project is organized as a full-stack JavaScript application with separate frontend and backend components:
+## Local Development Setup
 
-- `api/` - Backend Express.js API with MongoDB integration
-- `client/` - Frontend React application built with Vite
-- Documentation and configuration files
+### Prerequisites
 
-## Technologies Used
+- Node.js (v14 or higher)
+- npm or yarn
+- MongoDB connection (local or Atlas)
 
-### Backend
-- Node.js & Express.js
-- MongoDB with Mongoose ODM
-- JWT for authentication
-- bcrypt for password encryption
-- RESTful API design
+### API Setup
 
-### Frontend
-- React 18
-- Redux Toolkit for state management
-- React Router for navigation
-- Tailwind CSS & Flowbite for styling
-- Chart.js for data visualization
-- Vite for development and building
+1. Navigate to the API directory:
+```
+cd picc-online-inventory/api
+```
 
-## Prerequisites
+2. Install dependencies:
+```
+npm install
+```
 
-Before you begin, ensure you have the following installed:
-- Node.js (v14 or newer)
-- npm (v6 or newer)
-- MongoDB (local or Atlas connection)
+3. Create a `.env` file with the following:
+```
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+PORT=3000
+```
 
-## Installation & Setup
+4. Start the development server:
+```
+npm run dev
+```
 
-1. Clone the repository
-   ```bash
-   git clone <repository-url>
-   cd picc-online-inventory
-   ```
+### Client Setup
 
-2. Install dependencies
-   ```bash
-   npm install
-   cd api && npm install
-   cd ../client && npm install
-   ```
+1. Navigate to the client directory:
+```
+cd picc-online-inventory/client
+```
 
-3. Environment Configuration
+2. Install dependencies:
+```
+npm install
+```
 
-   **For API (.env file in api/ directory):**
-   ```
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   PORT=5000
-   ```
+3. Make sure you have the necessary environment files:
 
-   **For Client (.env file in client/ directory):**
-   ```
-   VITE_API_BASE_URL=http://localhost:5000
-   ```
+`.env.development`:
+```
+VITE_API_MODE=development
+VITE_API_BASE_URL_DEVELOPMENT=http://localhost:3000
+VITE_API_BASE_URL_PRODUCTION=https://picc-inventory-api.onrender.com
+```
 
-4. Running the Application
+4. Start the development server:
+```
+npm run dev
+```
 
-   **Development Mode (runs both API and client concurrently):**
-   ```bash
-   npm run dev
-   ```
+## Deployment
 
-   **Running API and Client Separately:**
-   ```bash
-   # For API
-   npm run dev:api
-   
-   # For Client
-   npm run start:client
-   ```
+The application is configured for deployment on Render using the `render.yaml` file in the client directory.
 
-5. Building for Production
-   ```bash
-   # Build client
-   npm run build:client
-   
-   # Start production server
-   npm start
-   ```
+### Deploy on Render
 
-## Key Features
+1. Create a Render account and connect your GitHub repository
+2. Use the Blueprint feature to deploy both the API and client from the `render.yaml` file
+3. Ensure environment variables are set correctly in the Render dashboard
 
-- **Authentication System**: Secure login/signup with JWT
-- **Dashboard**: Overview of inventory metrics, low stock alerts, and recent activity
-- **Supply Management**: Add, use, and track supplies
-- **Activity Charts**: Visualize stock usage patterns
-- **User Management**: Admin controls for managing team members
-- **History Tracking**: Complete history of stock additions and usage
+### Manual Deployment
 
-## API Endpoints
+**API:**
+1. Build and start the API:
+```
+npm install
+npm start
+```
 
-The API provides endpoints for:
-- User authentication (/api/auth)
-- Item management (/api/items)
-- Stock operations (/api/stock)
-- Stock usage tracking (/api/stockUsage)
-- User management (/api/users)
-
-For detailed API documentation, refer to the API README in the `/api` directory.
-
-## User Roles
-
-- **Regular Users**: Can view inventory, add/use stock, and view history
-- **Administrators**: Additional abilities to manage users, create/update items, and edit records
+**Client:**
+1. Build the client:
+```
+npm install
+npm run build
+```
+2. Deploy the `dist` directory to a static hosting service
 
 ## License
 
-This project is licensed under the ISC License - see the LICENSE file for details.
-
-## Contributors
-
-- PICC Team
-
-## Support
-
-For support or feature requests, please contact the project maintainers. 
+ISC 

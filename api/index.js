@@ -20,9 +20,29 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+// Configure CORS based on environment
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const productionUrls = ['https://picc-inventory-client.onrender.com'];
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? [...productionUrls, clientUrl]
+  : [clientUrl];
+
+console.log('CORS allowed origins:', allowedOrigins);
+
 app.use(
   cors({
-    origin: '*',
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        console.log('Blocked by CORS:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
@@ -32,7 +52,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connect to MongoDB
 mongoose
-  .connect('mongodb+srv://chippytunamayo:S8rfh4knUshiC5kJ@cluster0.ks87ytd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+  .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
   })
@@ -46,6 +66,17 @@ app.use('/api/user', userRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/stockUsage', stockUsageRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    message: 'API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

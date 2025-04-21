@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { Alert, Button, Label, Select, TextInput, Spinner } from 'flowbite-react';
+import { apiGet, apiPost } from '../utils/apiConfig';
 
 export default function AddStock() {
   const { currentUser } = useSelector((state) => state.user);
@@ -18,7 +19,7 @@ export default function AddStock() {
   // Create fetchItems as a memoized function so it can be called after adding stock
   const fetchItems = useCallback(async () => {
     try {
-      const res = await fetch('/api/items');
+      const res = await apiGet('items');
       const data = await res.json();
       setItems(Array.isArray(data) ? data : 
                Array.isArray(data.items) ? data.items : []);
@@ -60,16 +61,9 @@ export default function AddStock() {
       setLoading(true);
       setError(null);
       
-      const res = await fetch('/api/stock', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          item: formData.item,
-          quantity: Number(formData.quantity),
-        }),
+      const res = await apiPost('stock', {
+        item: formData.item,
+        quantity: Number(formData.quantity),
       });
       
       const data = await res.json();

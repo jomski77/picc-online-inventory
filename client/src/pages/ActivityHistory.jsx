@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Button, Table, Badge, Spinner, Select, Pagination } from 'flowbite-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { apiGet } from '../utils/apiConfig';
 
 export default function ActivityHistory() {
   const { currentUser } = useSelector((state) => state.user);
@@ -33,7 +34,7 @@ export default function ActivityHistory() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch('/api/items');
+        const res = await apiGet('items');
         const data = await res.json();
         setItems(data);
       } catch (error) {
@@ -56,14 +57,10 @@ export default function ActivityHistory() {
         countParams.append('count', 'true');
         
         // Get count of stock records
-        const stockCountRes = await fetch(`/api/stock/count?${countParams.toString()}`, {
-          credentials: 'include',
-        });
+        const stockCountRes = await apiGet(`stock/count?${countParams.toString()}`);
         
         // Get count of usage records
-        const usageCountRes = await fetch(`/api/stockUsage/count?${countParams.toString()}`, {
-          credentials: 'include',
-        });
+        const usageCountRes = await apiGet(`stockUsage/count?${countParams.toString()}`);
         
         let stockCount = 0;
         let usageCount = 0;
@@ -121,9 +118,7 @@ export default function ActivityHistory() {
         
         // Only fetch stock data if we need it
         if (stockLimit > 0) {
-          const stockRes = await fetch(`/api/stock?${stockParams.toString()}`, {
-            credentials: 'include',
-          });
+          const stockRes = await apiGet(`stock?${stockParams.toString()}`);
           
           if (stockRes.ok) {
             const data = await stockRes.json();
@@ -147,9 +142,7 @@ export default function ActivityHistory() {
         
         // Only fetch usage data if we need it
         if (usageLimit > 0) {
-          const usageRes = await fetch(`/api/stockUsage?${usageParams.toString()}`, {
-            credentials: 'include',
-          });
+          const usageRes = await apiGet(`stockUsage?${usageParams.toString()}`);
           
           if (usageRes.ok) {
             const data = await usageRes.json();

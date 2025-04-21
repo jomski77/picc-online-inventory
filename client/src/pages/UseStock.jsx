@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Alert, Button, Label, Select, TextInput, Spinner } from 'flowbite-react';
+import { apiGet, apiPost } from '../utils/apiConfig';
 
 export default function UseStock() {
   const { currentUser } = useSelector((state) => state.user);
@@ -18,7 +19,7 @@ export default function UseStock() {
     const fetchAvailableItems = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/items');
+        const res = await apiGet('items');
         const data = await res.json();
         setItems(data);
         setLoading(false);
@@ -62,16 +63,9 @@ export default function UseStock() {
       setLoading(true);
       setError(null);
       
-      const res = await fetch('/api/stockUsage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          item: formData.item,
-          quantity: Number(formData.quantity),
-        }),
+      const res = await apiPost('stockUsage', {
+        item: formData.item,
+        quantity: Number(formData.quantity),
       });
       
       const data = await res.json();
@@ -85,7 +79,7 @@ export default function UseStock() {
       setSuccess('Stock usage recorded successfully');
       
       // Refresh item list to update stock values
-      const refreshRes = await fetch('/api/items');
+      const refreshRes = await apiGet('items');
       const refreshData = await refreshRes.json();
       setItems(refreshData);
       

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Alert, Button, Label, TextInput, Spinner, Select } from 'flowbite-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { apiGet, apiPut } from '../utils/apiConfig';
 
 export default function EditUsage() {
   const { currentUser } = useSelector((state) => state.user);
@@ -20,7 +21,7 @@ export default function EditUsage() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch('/api/items');
+        const res = await apiGet('items');
         const data = await res.json();
         setItems(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -32,9 +33,7 @@ export default function EditUsage() {
       try {
         setLoading(true);
         
-        const res = await fetch(`/api/stockUsage/${usageId}`, {
-          credentials: 'include',
-        });
+        const res = await apiGet(`stockUsage/${usageId}`);
         
         if (!res.ok) {
           throw new Error('Failed to fetch usage record');
@@ -78,16 +77,9 @@ export default function EditUsage() {
       setSubmitting(true);
       setError(null);
       
-      const res = await fetch(`/api/stockUsage/${usageId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          quantity: formData.quantity,
-          item: formData.item,
-        }),
+      const res = await apiPut(`stockUsage/${usageId}`, {
+        quantity: formData.quantity,
+        item: formData.item,
       });
       
       const data = await res.json();
